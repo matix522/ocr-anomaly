@@ -16,9 +16,9 @@ struct OcrImage {
     image_data: String,
 }
 
-fn make_request_body(data: &String) -> String {
+fn make_request_body(data: String) -> String {
     let mut image = Map::new();
-    image.insert("content".into(), Value::String(data.clone()));
+    image.insert("content".into(), Value::String(data));
     let image = Value::Object(image);
 
     let mut feature = Map::new();
@@ -50,8 +50,10 @@ async fn anomaly() {
     format = "application/json",
     data = "<image>"
 )]
-async fn ocr_with_anomaly(image: Json<OcrImage>) -> Result<String, BadRequest<String>> {
-    let google_cloud_req = make_request_body(&image.image_data);
+async fn ocr_with_anomaly(mut image: Json<OcrImage>) -> Result<String, BadRequest<String>> {
+    let mut data = String::new();
+    std::mem::swap(&mut data, &mut image.image_data);
+    let google_cloud_req = make_request_body(data);
 
     anomaly().await;
 
