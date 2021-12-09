@@ -1,11 +1,14 @@
 #[macro_use]
 extern crate rocket;
 
+use std::time::Duration;
+
 use rocket::serde::{json::Json, Deserialize};
 use serde_json::{Map, Value};
 
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use rocket::response::status::BadRequest;
+use rand::Rng;
 
 #[derive(Deserialize)]
 struct OcrImage {
@@ -33,6 +36,15 @@ fn make_request_body(data: &String) -> String {
     Value::Object(api_request).to_string()
 }
 
+async fn anomaly() {
+    let random = rand::thread_rng().gen_range(0..20);
+    match random {
+        20 => { tokio::time::sleep(Duration::from_secs(300)).await },
+        18..=19 => { tokio::time::sleep(Duration::from_secs(5)).await },
+        _ => {}
+    }
+}
+
 #[post(
     "/api/v1/ocr_with_anomaly",
     format = "application/json",
@@ -41,19 +53,20 @@ fn make_request_body(data: &String) -> String {
 async fn ocr_with_anomaly(image: Json<OcrImage>) -> Result<String, BadRequest<String>> {
     let google_cloud_req = make_request_body(&image.image_data);
 
+    anomaly().await;
+
     let client = reqwest::Client::new();
-    dbg!(&image.api_key);
-    // dbg!(&image.image_data);
-    let res = dbg!(client
+
+    let res = client
         .post("https://vision.googleapis.com/v1/images:annotate")
         .header(AUTHORIZATION, format!("Bearer {}", &image.api_key.trim()))
         .header(CONTENT_TYPE, "application/json; charset=utf-8")
         .body(google_cloud_req)
         .send()
         .await
-        .map_err(|e| BadRequest(Some(e.to_string()))))?;
+        .map_err(|e| BadRequest(Some(e.to_string())))?;
 
-    dbg!(res.text().await).map_err(|e| BadRequest(Some(e.to_string())))
+    res.text().await.map_err(|e| BadRequest(Some(e.to_string())))
 }
 
 #[launch]
