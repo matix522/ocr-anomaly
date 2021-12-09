@@ -1,1 +1,3 @@
 # ocr-anomaly
+
+``` cargo run```
