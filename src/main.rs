@@ -6,9 +6,9 @@ use std::time::Duration;
 use rocket::serde::{json::Json, Deserialize};
 use serde_json::{Map, Value};
 
+use rand::Rng;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use rocket::response::status::BadRequest;
-use rand::Rng;
 
 #[derive(Deserialize)]
 struct OcrImage {
@@ -39,8 +39,18 @@ fn make_request_body(data: String) -> String {
 async fn anomaly() {
     let random = rand::thread_rng().gen_range(0..20);
     match random {
-        20 => { tokio::time::sleep(Duration::from_secs(300)).await },
-        18..=19 => { tokio::time::sleep(Duration::from_secs(5)).await },
+        20 => {
+            eprintln!("Termination anomally!");
+            panic!("Termination anomally!")
+        }
+        19 => {
+            eprintln!("Large delay Anomally!");
+            tokio::time::sleep(Duration::from_secs(30)).await
+        }
+        18 => {
+            eprintln!("Small delay Anomally!");
+            tokio::time::sleep(Duration::from_secs(5)).await
+        }
         _ => {}
     }
 }
@@ -68,7 +78,9 @@ async fn ocr_with_anomaly(mut image: Json<OcrImage>) -> Result<String, BadReques
         .await
         .map_err(|e| BadRequest(Some(e.to_string())))?;
 
-    res.text().await.map_err(|e| BadRequest(Some(e.to_string())))
+    res.text()
+        .await
+        .map_err(|e| BadRequest(Some(e.to_string())))
 }
 
 #[launch]
